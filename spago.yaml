@@ -1,0 +1,5 @@
+package:
+  name: refs
+  dependencies:
+    - effect
+    - prelude
