@@ -1,19 +1,30 @@
-let _new s = ref s
+let _new s = fun _ -> box (ref s)
 
 let newWithSelf f =
-    let r = ref (box null)
-    let s = (unbox (f (box r)))
-    r := s
-    box r
+    fun _ ->
+        let r = ref (box null)
+        let f' = unbox<obj -> obj> f
+        let s = unbox<obj> (f' (box r))
+        r := s
+        box r
 
-let read r = !(unbox<obj ref> r)
+let read r =
+    fun _ ->
+        let rRef = unbox<obj ref> r
+        lock rRef (fun () -> !rRef)
 
 let write s r =
-    let rRef = unbox<obj ref> r
-    rRef := s
+    fun _ ->
+        let rRef = unbox<obj ref> r
+        lock rRef (fun () -> rRef := s)
+        box null
 
 let modifyImpl f r =
-    let rRef = unbox<obj ref> r
-    let result = unbox<Map<string, obj>> ((unbox<obj -> obj> f) (!rRef))
-    rRef := Map.find "state" result
-    Map.find "value" result
+    fun _ ->
+        let rRef = unbox<obj ref> r
+        let f' = unbox<obj -> Map<string, obj>> f
+        lock rRef (fun () ->
+            let result = f' (!rRef)
+            rRef := Map.find "state" result
+            Map.find "value" result
+        )
