@@ -22,9 +22,9 @@ let write s r =
 let modifyImpl f r =
     fun _ ->
         let rRef = unbox<obj ref> r
-        let f' = unbox<obj -> Map<string, obj>> f
+        let f' = unbox<obj -> obj> f
         lock rRef (fun () ->
-            let result = f' (!rRef)
+            let result = unbox<Map<string, obj>> (f' (!rRef))
             rRef := Map.find "state" result
             Map.find "value" result
         )
